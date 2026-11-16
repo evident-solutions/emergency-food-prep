@@ -268,7 +268,7 @@ export function renderStock(sortedItems, report, sort) {
   dirBtn.setAttribute('aria-label', `Sort direction: ${sort.dir === 'desc' ? 'descending' : 'ascending'}. Activate to toggle.`);
 
   if (sortedItems.length === 0) {
-    container.innerHTML = `<p class="empty-note">No items yet. Use <strong>Import spreadsheet</strong> for an Excel or CSV file, or <strong>Add item</strong> to enter one product.</p>
+    container.innerHTML = `<p class="empty-note">No items yet. Use <strong>Import spreadsheet</strong>, or <strong>Add item</strong> to enter one product.</p>
       <div class="btn-row">
         <button type="button" class="btn btn--primary" data-add-item>Add item</button>
         <button type="button" class="btn" data-open-import>Import spreadsheet</button>

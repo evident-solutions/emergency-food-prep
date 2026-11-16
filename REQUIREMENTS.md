@@ -13,6 +13,7 @@ This is the build brief for Emergency Food Prep (formerly Survival Plan), a pers
 | 1.4 | Optional **linked JSON file** on disk. `localStorage` stays the live, offline store. Chromium browsers can keep a user-owned file in sync after each save. Other browsers keep one-shot Export JSON. |
 | 1.5 | Removed the Plan-top **Import a spreadsheet** card (header + Stock already provide import). Sticky header also has **Add item** so a row can be added without scrolling to Stock. |
 | 1.6 | Product name is **Emergency Food Prep**. The first tab is **Emergency Stock** (internal id remains `plan`). |
+| 1.7 | Calories per unit are 0 to 100,000. Visitor-facing backup and spreadsheet wording: **Backup or restore my data**, **Download backup**, **Restore backup**, **Download blank spreadsheet**. The backup file is still JSON. A blank spreadsheet is still a `.csv` file. |
 
 ## Problem
 
@@ -47,7 +48,7 @@ Each row is one product. Enter calories and protein for the whole container (per
 |---|---|---|
 | Item name | Text | Required, 1 to 100 characters |
 | Category | Dropdown | Required, one of the five categories below |
-| Calories per unit | Number | Required, 0 to 10,000 |
+| Calories per unit | Number | Required, 0 to 100,000 |
 | Protein per unit (g) | Number | Required, 0 to 500 |
 | Quantity | Whole number | Required, 0 to 9,999 |
 | Expiration date | Date | Required, valid date |
@@ -62,7 +63,7 @@ Many users already track their stock in a spreadsheet. They must be able to impo
 
 **Accepted input**
 
-- **Excel workbook** (`.xlsx`, `.xlsm`): the first worksheet is read. Date cells and Excel serial day numbers in the expiration column are converted to `YYYY-MM-DD`. Older `.xls` files, Numbers (`.numbers`) and OpenDocument (`.ods`) are not read; the app says so and offers CSV or paste instead.
+- **Excel workbook** (`.xlsx`, `.xlsm`): the first worksheet is read. Date cells and Excel serial day numbers in the expiration column are converted to `YYYY-MM-DD`. Older `.xls` files, Numbers (`.numbers`) and OpenDocument (`.ods`) are not read. The message tells the user to save as an Excel workbook (`.xlsx`) or as CSV (Comma delimited), or to paste the cells. The file picker is labeled **Choose a spreadsheet**. The help under it names the extensions `.xlsx` and `.csv`.
 - **CSV** (`.csv`) or **tab-separated text** (`.tsv`, `.txt`). Comma, semicolon and tab delimiters are detected automatically. Quoted fields and Windows or Mac line endings must be handled. Files are read as **UTF-8** (a leading byte-order mark is stripped).
 - **Pasted cells**: the user can copy a range from Excel, Google Sheets or Numbers and paste it into a text area. Pasted cells arrive tab-separated and are treated like a CSV/TSV file.
 
@@ -95,7 +96,7 @@ If any of the six columns cannot be found, the import stops and the message list
 | Add to current stock (default) | Imported rows are added. A row whose name and category match an existing item (case-insensitive) **updates** that item's calories, protein, quantity and expiration date instead of creating a duplicate. |
 | Replace current stock | All existing stock rows are deleted and the imported rows take their place. Requires confirmation: "This will replace all N current stock items. Continue?" |
 
-Spreadsheet import never changes plan settings, quotas or the essentials checklist. JSON export/import is the way to back up everything, and lives with the stock table — not on the Settings tab.
+Spreadsheet import never changes plan settings, quotas or the essentials checklist. **Download backup** and **Restore backup**, under **Backup or restore my data** on Emergency Stock, are how the user copies everything. Those controls are not on the Settings tab.
 
 **Preview before import**
 
@@ -109,7 +110,7 @@ Nothing is saved until the user presses the import button, which states the coun
 
 **Template**
 
-A "Download CSV template" link provides a file with the six canonical headers and the example row, so users who start from scratch produce a compatible sheet.
+**Download blank spreadsheet** provides a `.csv` file with the six canonical headers and the example row, so users who start from scratch produce a compatible sheet. The button does not say CSV.
 
 ## Reference Quotas
 
@@ -163,7 +164,7 @@ D is days and P is people. Only non-expired items count toward stock. An item is
 
 Calorie days of coverage uses the weakest category so that a surplus in one category cannot hide a shortage in another. An empty stock table gives zero days.
 
-Verdict: the plan is Sufficient when every category calorie gap is zero and the protein gap against the minimum is zero. Otherwise it is Not sufficient. Two notes appear when relevant:
+Verdict: **Sufficient** when every category calorie gap is zero and the protein gap against the minimum is zero. Otherwise **Not sufficient**. Two notes appear when relevant:
 
 - Protein meets the minimum but not the target: "Protein meets the minimum but falls short of the recommended target."
 - Expired items exist: a warning that they are excluded from the totals.
@@ -187,7 +188,7 @@ Every bar must show the percentage and label as text. Use a color-blind-safe pal
 3. **Adequacy summary**: the verdict, days of coverage for calories and protein, a table of required, in stock, gap and progress bar for each category, a protein row against both minimum and target, and a water reminder ("You need D times P gallons of water. Water is not tracked in the stock table.").
 4. **Expiring-soon panel**: items expiring within the warning window, sorted by fewest days left. Show name, category, expiration date and days remaining, with the prompt "Rotate these items: use them soon and replace with fresh stock." If none, show "No items expiring soon" and collapse the panel.
 5. **Expired panel**: items past their date, labeled "Expired, excluded from all calculations", each with Delete and Update buttons. Hide the panel when empty.
-6. **Stock table**: all items with columns for name, category, calories, protein, quantity, expiration and status (Good, Expiring soon, Expired). Expired rows are muted with strikethrough and an "Expired" badge. Sortable by any column, defaulting to category, then expiration date oldest first. Each row has Edit and Delete. **Import spreadsheet** and **Add item** are also on the Stock heading. A "Backup or restore this plan" disclosure under the table holds JSON export/import, the CSV template, and the optional linked disk file.
+6. **Stock table**: all items with columns for name, category, calories, protein, quantity, expiration and status (Good, Expiring soon, Expired). Expired rows are muted with strikethrough and an "Expired" badge. Sortable by any column, defaulting to category, then expiration date oldest first. Each row has Edit and Delete. **Import spreadsheet** and **Add item** are also on the Stock heading. Above the table: "Import a spreadsheet, or add items one by one." An empty table says "No items yet. Use Import spreadsheet, or Add item to enter one product." A **Backup or restore my data** disclosure under the table holds **Download backup**, **Restore backup**, **Download blank spreadsheet**, and the optional file on this computer.
 
 ### Shopping list tab
 
@@ -198,7 +199,7 @@ Every bar must show the percentage and label as text. Use a color-blind-safe pal
 
 ### Settings tab
 
-Plan settings, all quotas, and a "Reset all to defaults" button. Changes save immediately. A short note at the top points to Emergency Stock for spreadsheet import, JSON backup, and the optional linked disk file.
+**Plan settings**, all quotas, and a "Reset all to defaults" button. Changes save immediately. A short note at the top points to Emergency Stock for spreadsheet import, a backup file, and the optional file on this computer. The note does not say JSON or CSV.
 
 ### Print view
 
@@ -215,11 +216,11 @@ Design the code so these upgrades can be added without refactoring.
 ## Functional Requirements
 
 - Add, edit, delete and sort stock rows.
-- Import stock rows from an Excel workbook (`.xlsx`), a CSV/TSV file, or pasted spreadsheet cells, with header mapping, per-row validation, a preview, and add-or-replace modes, as described under **Spreadsheet import**. The import control is on the Emergency Stock tab with the stock table.
+- Import stock rows from a spreadsheet (`.xlsx`, `.csv`, or `.tsv`) or pasted cells, with header mapping, per-row validation, a preview, and add-or-replace modes, as described under **Spreadsheet import**. The control is labeled **Import spreadsheet** and sits on the Emergency Stock tab with the stock table.
 - Recalculate all totals, gaps, verdicts and progress bars instantly on any change.
-- Save all data (stock, settings, quotas, checklist) in local storage with a schema version number. If storage is unavailable, show a persistent banner: "Data cannot be saved in this browser session. Export your data manually."
-- Export all data as one JSON file with a timestamped name. Import a JSON file after confirming: "This will replace all current data. Continue?"
-- **Linked backup file (1.4)**: on browsers that support the File System Access API, the user can create or open a JSON file on disk. The browser copy in local storage remains the live store and is what the app reads on launch and when offline. After a file is linked and write permission is granted, every successful save also overwrites that file with the same JSON document as Export. Opening an existing file replaces the browser copy after confirm, then keeps the file linked. "Stop linking" forgets the handle and does not delete the file. If permission is only a prompt after a reload, show the file name and a "Write now" action that requests permission. If the API is missing (typical on iOS Safari), hide the link controls and keep Export JSON. The service worker is unchanged: it caches app files only.
+- Save all data (stock, settings, quotas, checklist) in local storage with a schema version number. If storage is unavailable, show a persistent banner: "Data cannot be saved in this browser session. Download a backup before you close this page."
+- **Download backup** saves all data as one timestamped `.json` file. **Restore backup** loads that file after confirming: "This will replace all current data. Continue?" The buttons do not say JSON. A file the app cannot read is reported as "That file is not a backup from this app."
+- **Linked backup file (1.4)**: on browsers that support the File System Access API, the user can create or open a backup file on disk. The help text is: "Choose a file on this computer. After that, every change updates that file too. The app also keeps a copy in this browser, so it still works offline." The browser copy in local storage remains the live store and is what the app reads on launch and when offline. After a file is linked and write permission is granted, every successful save also overwrites that file with the same document as Download backup. Opening an existing file replaces the browser copy after confirm, then keeps the file linked. "Stop linking" forgets the handle and does not delete the file. If permission is only a prompt after a reload, show the file name and a "Write now" action that requests permission. If the API is missing (typical on iOS Safari), hide the link controls and tell the user to download a backup after big changes. The service worker is unchanged: it caches app files only.
 - Validate on save and show inline errors for empty required fields, negative numbers, values over the maximums and invalid dates.
 
 ## Non-Functional Requirements
@@ -236,7 +237,7 @@ Design the code so these upgrades can be added without refactoring.
 - Tracking water, medications or other non-food supplies beyond the essentials checklist.
 - Individual needs such as age, weight, allergies or special diets. All people are assumed to be moderately active adults with the same needs.
 - Native iOS or Android apps.
-- Parsing older Excel `.xls` files, Numbers (`.numbers`) or OpenDocument (`.ods`) workbooks, live links to online spreadsheets, and exporting the stock table back to CSV.
+- Parsing older Excel `.xls` files, Numbers (`.numbers`) or OpenDocument (`.ods`) workbooks, live links to online spreadsheets, and exporting the stock table back to a spreadsheet.
 
 ## Assumptions
 
@@ -246,4 +247,4 @@ Design the code so these upgrades can be added without refactoring.
 
 ## Suggested Build Prompt
 
-Build a single-page, mobile-first web app called Emergency Food Prep that meets the requirements in this document. Use plain HTML, CSS and JavaScript. Persist data in local storage with a schema version number, and register a service worker so the app works offline. The main screen (Emergency Stock) shows the adequacy summary, expiring-soon panel, expired panel and stock table. Add separate tabs for the shopping list and settings, plus print styles. Put spreadsheet import (Excel .xlsx and CSV) on the Emergency Stock tab with the stock table. Organize the code in modules so calendar export and notifications can be added later without refactoring.
+Build a single-page, mobile-first web app called Emergency Food Prep that meets the requirements in this document. Use plain HTML, CSS and JavaScript. Persist data in local storage with a schema version number, and register a service worker so the app works offline. The main screen (Emergency Stock) shows the adequacy summary, expiring-soon panel, expired panel and stock table. Add separate tabs for the shopping list and settings, plus print styles. Put spreadsheet import on the Emergency Stock tab with the stock table. Organize the code in modules so calendar export and notifications can be added later without refactoring.

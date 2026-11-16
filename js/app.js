@@ -420,7 +420,7 @@ function renderFileLinkPanel() {
   if (!help || !createBtn) return;
 
   if (!app.backup.supported) {
-    help.textContent = 'This browser cannot keep a live file link. Use Export JSON after big changes. The plan still saves in this browser and works offline.';
+    help.textContent = 'This browser cannot keep a live file link. Download a backup after big changes. Your data still stays in this browser and works offline.';
     createBtn.hidden = true;
     openBtn.hidden = true;
     writeBtn.hidden = true;
@@ -431,7 +431,7 @@ function renderFileLinkPanel() {
 
   const linked = Boolean(app.backup.name);
   if (!linked) {
-    help.textContent = 'Choose a JSON file on this computer. After that, every change also overwrites that file. This browser copy stays the live store, so the app still works offline.';
+    help.textContent = 'Choose a file on this computer. After that, every change updates that file too. The app also keeps a copy in this browser, so it still works offline.';
     createBtn.hidden = false;
     openBtn.hidden = false;
     writeBtn.hidden = true;
@@ -517,8 +517,8 @@ async function linkExistingBackupFile() {
     try {
       parsed = storage.parseImport(text);
     } catch (error) {
-      setFileLinkStatus(error.message || 'That file is not an Emergency Food Prep export.');
-      window.alert(error.message || 'That file is not an Emergency Food Prep export.');
+      setFileLinkStatus(error.message || 'That file is not a backup from this app.');
+      window.alert(error.message || 'That file is not a backup from this app.');
       return;
     }
     if (!window.confirm('This will replace all current data in this browser with the file, then keep the file linked. Continue?')) {
@@ -556,7 +556,7 @@ async function writeBackupFileNow() {
   if (permission !== 'granted') {
     app.backup.needsPermission = true;
     renderFileLinkPanel();
-    setFileLinkStatus('Permission was not granted. The plan is still saved in this browser.');
+    setFileLinkStatus('Permission was not granted. Your data is still saved in this browser.');
     return;
   }
   try {
@@ -641,7 +641,7 @@ function exportData() {
   const now = new Date();
   const fileName = storage.exportFileName(now);
   downloadText(storage.serializeForExport(app.state, now), fileName, 'application/json');
-  setDataStatus(`Exported ${fileName}.`);
+  setDataStatus(`Downloaded ${fileName}.`);
 }
 
 function importData(file) {
@@ -652,12 +652,12 @@ function importData(file) {
     try {
       result = storage.parseImport(String(reader.result));
     } catch (err) {
-      setDataStatus(err.message || 'Import failed.');
-      window.alert(err.message || 'Import failed.');
+      setDataStatus(err.message || 'That file is not a backup from this app.');
+      window.alert(err.message || 'That file is not a backup from this app.');
       return;
     }
     if (!window.confirm('This will replace all current data. Continue?')) {
-      setDataStatus('Import cancelled.');
+      setDataStatus('Restore cancelled.');
       return;
     }
     app.state = result.state;
@@ -665,8 +665,8 @@ function importData(file) {
     renderAll();
     ui.renderSettings(app.state);
     const dropped = result.dropped ? ` ${result.dropped} invalid ${result.dropped === 1 ? 'item was' : 'items were'} skipped.` : '';
-    setDataStatus(`Imported ${app.state.items.length} ${app.state.items.length === 1 ? 'item' : 'items'} from ${file.name}.${dropped}`);
-    ui.showToast('Data imported.');
+    setDataStatus(`Restored ${app.state.items.length} ${app.state.items.length === 1 ? 'item' : 'items'} from ${file.name}.${dropped}`);
+    ui.showToast('Backup restored.');
   };
   reader.onerror = () => {
     setDataStatus('Could not read that file.');
@@ -741,11 +741,11 @@ async function handleSheetFile(file) {
   if (!file) return;
   const lower = file.name.toLowerCase();
   if (/\.xls$/.test(lower) && !/\.xlsx$/.test(lower) && !/\.xlsm$/.test(lower)) {
-    showSheetFatal(`"${file.name}" is an older Excel format (.xls). Save it as Excel Workbook (.xlsx) or CSV and try again.`);
+    showSheetFatal(`"${file.name}" is an older Excel format (.xls). Save it as an Excel workbook (.xlsx) or as CSV (Comma delimited) and try again.`);
     return;
   }
   if (/\.(numbers|ods)$/.test(lower)) {
-    showSheetFatal(`"${file.name}" cannot be read directly. Save it as Excel (.xlsx) or CSV, or copy the cells and paste them below.`);
+    showSheetFatal(`"${file.name}" cannot be read directly. Save it as an Excel workbook (.xlsx) or as CSV (Comma delimited), or copy the cells and paste them below.`);
     return;
   }
   try {

@@ -169,14 +169,14 @@ export function parseImport(text) {
   try {
     parsed = JSON.parse(text);
   } catch {
-    throw new Error('That file is not valid JSON.');
+    throw new Error('That file is not a backup from this app.');
   }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error('That file does not look like an Emergency Food Prep export.');
+    throw new Error('That file is not a backup from this app.');
   }
   const hasKnownShape = 'items' in parsed || 'settings' in parsed || 'quotas' in parsed || 'essentials' in parsed;
   if (!hasKnownShape) {
-    throw new Error('That file does not look like an Emergency Food Prep export.');
+    throw new Error('That file is not a backup from this app.');
   }
   const version = Number(parsed.schemaVersion) || 0;
   if (version > SCHEMA_VERSION) {

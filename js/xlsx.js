@@ -48,7 +48,7 @@ function readZipEntries(bytes) {
 
 async function inflateRaw(bytes) {
   if (typeof DecompressionStream !== 'function') {
-    throw new Error('This browser cannot unpack Excel files. Use a current browser, or save the sheet as CSV.');
+    throw new Error('This browser cannot unpack Excel files. Use a current browser, or save the sheet as CSV (Comma delimited).');
   }
   const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
   return new Uint8Array(await new Response(stream).arrayBuffer());
@@ -62,7 +62,7 @@ async function readZipFile(bytes, entry) {
   const compressed = bytes.subarray(start, start + entry.compSize);
   if (entry.method === 0) return compressed;
   if (entry.method === 8) return inflateRaw(compressed);
-  throw new Error('That Excel file uses a compression method this app cannot read. Save the sheet as CSV and try again.');
+  throw new Error('That Excel file uses a compression method this app cannot read. Save the sheet as CSV (Comma delimited) and try again.');
 }
 
 function xml(text) {
@@ -206,7 +206,7 @@ function sheetToRows(sheetDoc, shared, dateXfs) {
 export async function parseXlsx(buffer) {
   const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
   if (!isZip(bytes)) {
-    throw new Error('That file is not a valid Excel workbook (.xlsx). Save it as .xlsx or CSV and try again.');
+    throw new Error('That file is not a valid Excel workbook (.xlsx). Save it as an Excel workbook (.xlsx) or as CSV (Comma delimited) and try again.');
   }
   const entries = readZipEntries(bytes);
   const readText = async (path) => {
@@ -216,7 +216,7 @@ export async function parseXlsx(buffer) {
   };
 
   const workbookText = await readText('xl/workbook.xml');
-  if (!workbookText) throw new Error('That Excel file is missing its workbook. Try saving as .xlsx or CSV.');
+  if (!workbookText) throw new Error('That Excel file is missing its workbook. Try saving as an Excel workbook (.xlsx) or as CSV (Comma delimited).');
   const relsText = await readText('xl/_rels/workbook.xml.rels');
   const rels = relsText ? parseRels(xml(relsText)) : new Map();
   const sheetPath = firstSheetPath(xml(workbookText), rels);

@@ -7,7 +7,7 @@ const STORE = 'handles';
 const HANDLE_KEY = 'plan';
 const NAME_KEY = 'survival-plan-backup-name';
 const ACCEPT = {
-  description: 'Emergency Food Prep JSON',
+  description: 'Emergency Food Prep backup',
   accept: { 'application/json': ['.json'] },
 };
 
