@@ -1,0 +1,18 @@
+{
+  "name": "Emergency Food Prep",
+  "short_name": "Food Prep",
+  "description": "Check whether your emergency food stock covers your household's calorie and protein needs.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f3f5f8",
+  "theme_color": "#1d4ed8",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

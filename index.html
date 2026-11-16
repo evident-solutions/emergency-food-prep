@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Emergency Food Prep</title>
+  <meta name="description" content="Check whether your emergency food stock covers your household's calorie and protein needs, and what to buy to close the gap.">
+  <meta name="theme-color" content="#1d4ed8">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="css/styles.css?v=9">
+  <script>
+    /* Drop a stuck service worker from an older build so this page can load. */
+    (function () {
+      var BUILD = '9';
+      try {
+        if (localStorage.getItem('survival-plan-build') === BUILD) return;
+        if (!('serviceWorker' in navigator)) {
+          localStorage.setItem('survival-plan-build', BUILD);
+          return;
+        }
+        Promise.all([
+          navigator.serviceWorker.getRegistrations().then(function (regs) {
+            return Promise.all(regs.map(function (r) { return r.unregister(); }));
+          }),
+          caches.keys().then(function (keys) {
+            return Promise.all(keys.filter(function (k) { return k.indexOf('survival-plan-') === 0; }).map(function (k) { return caches.delete(k); }));
+          }),
+        ]).then(function () {
+          localStorage.setItem('survival-plan-build', BUILD);
+          location.reload();
+        });
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <div id="storage-banner" class="banner banner--error no-print" role="alert" hidden>
+    Data cannot be saved in this browser session. Export your data manually.
+  </div>
+
+  <header class="app-header">
+    <div class="app-header__row">
+      <h1 class="app-title">Emergency Food Prep</h1>
+      <div class="header-actions no-print">
+        <button type="button" class="btn btn--primary" data-add-item>Add item</button>
+        <button type="button" class="btn" data-open-import>Import spreadsheet</button>
+        <button type="button" class="btn btn--ghost" id="print-btn">Print / Save as PDF</button>
+      </div>
+    </div>
+    <nav class="tabs no-print" aria-label="Sections">
+      <div role="tablist" aria-label="Sections" class="tablist">
+        <button type="button" role="tab" id="tab-plan" class="tab" aria-selected="true" aria-controls="panel-plan" data-tab="plan">Emergency Stock</button>
+        <button type="button" role="tab" id="tab-shopping" class="tab" aria-selected="false" aria-controls="panel-shopping" data-tab="shopping" tabindex="-1">Shopping list</button>
+        <button type="button" role="tab" id="tab-settings" class="tab" aria-selected="false" aria-controls="panel-settings" data-tab="settings" tabindex="-1">Settings</button>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main" class="main">
+    <!-- ================= PLAN ================= -->
+    <section id="panel-plan" class="panel" role="tabpanel" aria-labelledby="tab-plan">
+      <section id="summary" class="card print-section" aria-labelledby="summary-heading">
+        <div class="section-head">
+          <h2 id="summary-heading">Adequacy summary</h2>
+          <p class="plan-line" id="plan-line"></p>
+        </div>
+        <div id="summary-content"></div>
+      </section>
+
+      <section id="expiring" class="card print-section" aria-labelledby="expiring-heading">
+        <h2 id="expiring-heading">Expiring soon</h2>
+        <div id="expiring-content"></div>
+        <div id="reminder-actions" class="btn-row no-print"></div>
+      </section>
+
+      <section id="expired" class="card card--danger no-print" aria-labelledby="expired-heading" hidden>
+        <h2 id="expired-heading">Expired</h2>
+        <p class="card__lede"><strong>Expired, excluded from all calculations.</strong> Update the date if the item was replaced, or delete it.</p>
+        <div id="expired-content"></div>
+      </section>
+
+      <section id="stock" class="card no-print" aria-labelledby="stock-heading">
+        <div class="section-head">
+          <h2 id="stock-heading">Stock</h2>
+          <div class="btn-row btn-row--tight stock-actions">
+            <button type="button" class="btn btn--primary" id="import-sheet-btn">Import spreadsheet</button>
+            <button type="button" class="btn" id="add-item-btn" data-add-item>Add item</button>
+          </div>
+        </div>
+        <p class="card__lede">Import an Excel (.xlsx) or CSV file, or add items one by one. Column headers are mapped automatically.</p>
+        <div class="sort-controls" id="sort-controls">
+          <label for="sort-key">Sort by</label>
+          <select id="sort-key">
+            <option value="default">Category, then expiration</option>
+            <option value="name">Name</option>
+            <option value="category">Category</option>
+            <option value="calories">Calories</option>
+            <option value="protein">Protein</option>
+            <option value="quantity">Quantity</option>
+            <option value="expires">Expiration</option>
+            <option value="status">Status</option>
+          </select>
+          <button type="button" class="btn btn--small" id="sort-dir" aria-pressed="false">Ascending</button>
+        </div>
+        <div id="stock-content"></div>
+        <details class="disclosure backup-panel">
+          <summary>Backup or restore this plan</summary>
+          <p class="card__lede">This browser keeps a live copy so the app still works offline. A file on this computer is a durable extra copy of stock, settings, quotas and checklist. Spreadsheet import above only changes stock.</p>
+          <div class="file-link" id="file-link-panel">
+            <h3 class="subheading">File on this computer</h3>
+            <p class="card__lede" id="file-link-help"></p>
+            <p class="file-link__name" id="file-link-name" hidden></p>
+            <div class="btn-row">
+              <button type="button" class="btn btn--primary" id="file-link-create-btn">Save to a file</button>
+              <button type="button" class="btn" id="file-link-open-btn">Use an existing file</button>
+              <button type="button" class="btn" id="file-link-write-btn" hidden>Write now</button>
+              <button type="button" class="btn btn--ghost" id="file-link-stop-btn" hidden>Stop linking</button>
+            </div>
+            <p class="status-line" id="file-link-status" role="status" aria-live="polite"></p>
+          </div>
+          <div class="btn-row">
+            <button type="button" class="btn" id="export-btn">Export JSON</button>
+            <button type="button" class="btn" id="import-btn">Import JSON</button>
+            <button type="button" class="btn btn--ghost" id="template-btn">Download CSV template</button>
+            <input type="file" id="import-file" accept="application/json,.json" class="visually-hidden" tabindex="-1" aria-hidden="true">
+          </div>
+          <p class="status-line" id="data-status" role="status" aria-live="polite"></p>
+        </details>
+      </section>
+    </section>
+
+    <!-- ================= SHOPPING LIST ================= -->
+    <section id="panel-shopping" class="panel print-section" role="tabpanel" aria-labelledby="tab-shopping" hidden>
+      <section class="card" aria-labelledby="shopping-heading">
+        <h2 id="shopping-heading">Shopping list</h2>
+        <p class="card__lede">Quantities are alternatives: buying about N more of any one listed item closes that gap. Mix and match as you like.</p>
+        <div id="shopping-content"></div>
+      </section>
+
+      <section class="card" aria-labelledby="essentials-heading">
+        <h2 id="essentials-heading">Essentials checklist</h2>
+        <p class="card__lede">Tick what you already have. Anything unticked stays on the shopping list.</p>
+        <ul class="checklist" id="essentials-list"></ul>
+      </section>
+    </section>
+
+    <!-- ================= SETTINGS ================= -->
+    <section id="panel-settings" class="panel no-print" role="tabpanel" aria-labelledby="tab-settings" hidden>
+      <section class="card" aria-labelledby="data-location-heading">
+        <h2 id="data-location-heading">Stock import and backup</h2>
+        <p class="card__lede">Spreadsheet import (Excel and CSV), JSON backup, and the optional file on this computer live on Emergency Stock, next to your stock — not here.</p>
+        <div class="btn-row">
+          <button type="button" class="btn btn--primary" data-open-import>Import spreadsheet</button>
+          <button type="button" class="btn" data-tab="plan">Go to Emergency Stock</button>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="plan-settings-heading">
+        <h2 id="plan-settings-heading">Plan settings</h2>
+        <p class="card__lede">Changes save and recalculate immediately.</p>
+        <div class="settings-grid">
+          <div class="field">
+            <label for="s-days">Days to cover</label>
+            <input id="s-days" type="number" inputmode="numeric" min="1" max="365" step="1" data-setting="days" aria-describedby="s-days-help s-days-error">
+            <p class="field-help" id="s-days-help">1 to 365 days.</p>
+            <p class="field-error" id="s-days-error"></p>
+          </div>
+          <div class="field">
+            <label for="s-people">Number of people</label>
+            <input id="s-people" type="number" inputmode="numeric" min="1" max="20" step="1" data-setting="people" aria-describedby="s-people-help s-people-error">
+            <p class="field-help" id="s-people-help">1 to 20 people.</p>
+            <p class="field-error" id="s-people-error"></p>
+          </div>
+          <div class="field">
+            <label for="s-warning">Expiration warning window (days)</label>
+            <input id="s-warning" type="number" inputmode="numeric" min="1" max="365" step="1" data-setting="warningDays" aria-describedby="s-warning-help s-warning-error">
+            <p class="field-help" id="s-warning-help">Items expiring within this many days are flagged for rotation.</p>
+            <p class="field-error" id="s-warning-error"></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="quotas-heading">
+        <h2 id="quotas-heading">Reference quotas</h2>
+        <p class="card__lede">Per person, per day. General guidelines for moderately active adults, not medical advice.</p>
+        <h3 class="subheading">Calories by category</h3>
+        <div class="settings-grid" id="quota-fields"></div>
+        <p class="quota-total">Total: <strong id="quota-total"></strong> calories per person per day</p>
+
+        <h3 class="subheading">Protein and water</h3>
+        <div class="settings-grid">
+          <div class="field">
+            <label for="q-proteinMin">Protein minimum (g)</label>
+            <input id="q-proteinMin" type="number" inputmode="decimal" min="0" max="500" step="any" data-quota="proteinMin" aria-describedby="q-proteinMin-error">
+            <p class="field-error" id="q-proteinMin-error"></p>
+          </div>
+          <div class="field">
+            <label for="q-proteinTarget">Protein target (g)</label>
+            <input id="q-proteinTarget" type="number" inputmode="decimal" min="0" max="500" step="any" data-quota="proteinTarget" aria-describedby="q-proteinTarget-error">
+            <p class="field-error" id="q-proteinTarget-error"></p>
+          </div>
+          <div class="field">
+            <label for="q-waterGallons">Water (gallons)</label>
+            <input id="q-waterGallons" type="number" inputmode="decimal" min="0" max="100" step="any" data-quota="waterGallons" aria-describedby="q-waterGallons-error">
+            <p class="field-error" id="q-waterGallons-error"></p>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button type="button" class="btn" id="reset-quotas-btn">Reset quotas to defaults</button>
+          <button type="button" class="btn btn--danger-outline" id="reset-all-btn">Reset all to defaults</button>
+        </div>
+        <p class="field-help">"Reset all" restores plan settings and quotas. Your stock items and checklist are kept.</p>
+      </section>
+
+    </section>
+  </main>
+
+  <footer class="app-footer no-print">
+    <p>Emergency Food Prep keeps all data on this device. Calorie and protein figures are general guidelines, not medical advice.</p>
+  </footer>
+
+  <!-- ================= ITEM FORM ================= -->
+  <dialog id="item-dialog" class="dialog" aria-labelledby="item-dialog-title">
+    <form id="item-form" novalidate>
+      <h2 id="item-dialog-title">Add item</h2>
+      <p class="hint">Enter calories and protein for the <strong>whole container</strong> (per-serving value × servings per container). Enter different flavors or sizes as separate rows.</p>
+
+      <div id="form-alert" class="form-alert" role="alert" tabindex="-1" hidden></div>
+
+      <div id="duplicate-warning" class="form-warning" role="alert" hidden>
+        <p id="duplicate-text"></p>
+        <div class="btn-row">
+          <button type="button" class="btn btn--small" id="dup-edit-btn">Edit the existing item</button>
+          <button type="button" class="btn btn--small btn--ghost" id="dup-add-btn">Add as a separate row</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="f-name">Item name</label>
+        <input id="f-name" name="name" type="text" maxlength="100" autocomplete="off" aria-describedby="f-name-error" placeholder="e.g. Black beans, 15 oz can">
+        <p class="field-error" id="f-name-error"></p>
+      </div>
+
+      <div class="field">
+        <label for="f-category">Category</label>
+        <select id="f-category" name="category" aria-describedby="f-category-error"></select>
+        <p class="field-error" id="f-category-error"></p>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="f-calories">Calories per unit</label>
+          <input id="f-calories" name="calories" type="number" inputmode="decimal" min="0" max="10000" step="any" aria-describedby="f-calories-error" placeholder="0 to 10,000">
+          <p class="field-error" id="f-calories-error"></p>
+        </div>
+        <div class="field">
+          <label for="f-protein">Protein per unit (g)</label>
+          <input id="f-protein" name="protein" type="number" inputmode="decimal" min="0" max="500" step="any" aria-describedby="f-protein-error" placeholder="0 to 500">
+          <p class="field-error" id="f-protein-error"></p>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="f-quantity">Quantity</label>
+          <input id="f-quantity" name="quantity" type="number" inputmode="numeric" min="0" max="9999" step="1" aria-describedby="f-quantity-error" placeholder="0 to 9,999">
+          <p class="field-error" id="f-quantity-error"></p>
+        </div>
+        <div class="field">
+          <label for="f-expires">Expiration date</label>
+          <input id="f-expires" name="expires" type="date" aria-describedby="f-expires-error">
+          <p class="field-error" id="f-expires-error"></p>
+        </div>
+      </div>
+
+      <div class="btn-row btn-row--end">
+        <button type="button" class="btn" id="item-cancel-btn">Cancel</button>
+        <button type="submit" class="btn btn--primary" id="item-save-btn">Save item</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ================= SPREADSHEET IMPORT ================= -->
+  <dialog id="import-dialog" class="dialog dialog--wide" aria-labelledby="import-dialog-title">
+    <form id="import-form" novalidate>
+      <h2 id="import-dialog-title">Import stock from a spreadsheet</h2>
+      <p class="hint">Your sheet needs a header row with these columns, in any order: <strong>Item Name, Category, Calories per Unit, Protein per Unit (g), Quantity, Expiration Date</strong>. Extra columns are ignored.</p>
+
+      <div class="import-sources">
+        <div class="field">
+          <label for="sheet-file">Choose an Excel or CSV file</label>
+          <input id="sheet-file" type="file" accept=".xlsx,.xlsm,.csv,.tsv,.txt,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,text/tab-separated-values,text/plain">
+          <p class="field-help">Accepts <strong>.xlsx</strong> and <strong>.csv</strong>. The first worksheet is used. Older .xls files are not supported.</p>
+        </div>
+        <div class="field">
+          <label for="sheet-paste">Or paste cells copied from your spreadsheet</label>
+          <textarea id="sheet-paste" rows="5" spellcheck="false" placeholder="Item Name	Category	Calories per Unit	Protein per Unit (g)	Quantity	Expiration Date&#10;Black beans	Beans and proteins	350	20	12	2028-03-01"></textarea>
+        </div>
+      </div>
+
+      <div id="import-fatal" class="form-alert" role="alert" tabindex="-1" hidden></div>
+
+      <div id="import-preview" hidden>
+        <h3 class="subheading">Column mapping</h3>
+        <ul class="mapping-list" id="import-mapping"></ul>
+
+        <h3 class="subheading">Preview</h3>
+        <p id="import-counts" class="import-counts" role="status" tabindex="-1"></p>
+        <div class="table-wrap table-wrap--scroll" id="import-rows"></div>
+
+        <fieldset class="mode-fieldset">
+          <legend>How to import</legend>
+          <label class="radio">
+            <input type="radio" name="import-mode" value="add" checked>
+            <span><strong>Add to current stock.</strong> Rows matching an existing item's name and category update that item.</span>
+          </label>
+          <label class="radio">
+            <input type="radio" name="import-mode" value="replace">
+            <span><strong>Replace current stock.</strong> Delete all current items and keep only the imported rows.</span>
+          </label>
+        </fieldset>
+      </div>
+
+      <div class="btn-row btn-row--end">
+        <button type="button" class="btn" id="import-cancel-btn">Cancel</button>
+        <button type="submit" class="btn btn--primary" id="import-apply-btn" disabled>Import</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <script type="module" src="js/app.js?v=9"></script>
+</body>
+</html>
